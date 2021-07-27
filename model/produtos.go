@@ -11,7 +11,6 @@ type Produto struct {
 }
 
 func BuscaTodosProdutos() []Produto {
-
 	dbConn := db.ConectaComPostgreSQL()
 	getAllProducts, err := dbConn.Query("select * from produtos")
 	defer dbConn.Close() // defer é executado apenas no final da função, após todas as outras linhas de comando
@@ -41,4 +40,15 @@ func BuscaTodosProdutos() []Produto {
 		produtos = append(produtos, p)
 	}
 	return produtos
+}
+
+func CriarNovoProduto(nome, descricao string, preco float64, quantidade int) {
+	dbConn := db.ConectaComPostgreSQL()
+	defer dbConn.Close()
+
+	insertProduct, err := dbConn.Prepare("insert into produtos(nome, descricao, preco, quantidade) values($1, $2, $3, $4)")
+	if err != nil {
+		panic(err.Error())
+	}
+	insertProduct.Exec(nome, descricao, preco, quantidade)
 }

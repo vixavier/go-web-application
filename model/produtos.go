@@ -1,6 +1,8 @@
 package model
 
-import "go/config/db"
+import (
+	"go/config/db"
+)
 
 type Produto struct {
 	Id         int
@@ -12,8 +14,8 @@ type Produto struct {
 
 func BuscaTodosProdutos() []Produto {
 	dbConn := db.ConectaComPostgreSQL()
-	getAllProducts, err := dbConn.Query("select * from produtos")
 	defer dbConn.Close() // defer é executado apenas no final da função, após todas as outras linhas de comando
+	getAllProducts, err := dbConn.Query("select * from produtos order by id asc")
 
 	if err != nil {
 		panic(err.Error())
@@ -63,4 +65,43 @@ func DeletaProduto(id string) {
 		panic(err.Error())
 	}
 	deletarOProduto.Exec(id)
+}
+
+func BuscaProduto(id string) Produto {
+	db := db.ConectaComPostgreSQL()
+	defer db.Close()
+
+	produtoById, err := db.Query("select * from produtos where id=$1", id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	produto := Produto{}
+	for produtoById.Next() {
+		var id, quantidade int
+		var nome, descricao string
+		var preco float64
+
+		err = produtoById.Scan(&id, &nome, &descricao, &preco, &quantidade)
+		if err != nil {
+			panic(err.Error())
+		}
+		produto.Id = id
+		produto.Nome = nome
+		produto.Descricao = descricao
+		produto.Preco = preco
+		produto.Quantidade = quantidade
+	}
+	return produto
+}
+
+func AtualizaProduto(id int, nome, descricao string, preco float64, quantidade int) {
+	db := db.ConectaComPostgreSQL()
+	defer db.Close()
+
+	AtualizaProduto, err := db.Prepare("update produtos set nome=$1, descricao=$2, preco=$3, quantidade=$4 where id=$5")
+	if err != nil {
+		panic(err.Error())
+	}
+	AtualizaProduto.Exec(nome, descricao, preco, quantidade, id)
 }
